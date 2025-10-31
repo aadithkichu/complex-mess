@@ -2,6 +2,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { testDbConnection } from './utils/db.js'; // <-- 1. IMPORT DB TESTER
 
 // --- Route Imports ---
 // Import your route files here (e.g., job routes, user routes)
@@ -59,6 +60,9 @@ app.use((err, req, res, next) => {
 });
 
 // --- Server Startup ---
-app.listen(PORT, () => {
+app.listen(PORT, async () => { // <-- 2. MAKE CALLBACK ASYNC
   console.log(`Server is running on http://localhost:${PORT}`);
+  
+  // 3. CALL THE DB TESTER
+  await testDbConnection();
 });
