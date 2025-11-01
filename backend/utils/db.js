@@ -14,12 +14,20 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// A simple function to test the connection
+// --- CORRECTED FUNCTION TO TEST CONNECTION ---
 export const testDbConnection = async () => {
   try {
-    console.log('Database connection successful!');
+    // 1. Execute a simple query to force a connection test.
+    const [rows] = await pool.query('SELECT 1 + 1 AS solution');
+    
+    // 2. Log success based on the query result.
+    console.log(`Database connection successful! Test result: ${rows[0].solution}`);
   } catch (error) {
-    console.error('Database connection failed:', error);
+    // 3. If the query fails (ECONNREFUSED, Access Denied, etc.), the error is caught here.
+    console.error('Database connection failed:', error.message);
+    
+    // Optional: Re-throw the error to halt server startup if connection is mandatory
+    throw error;
   }
 };
 
