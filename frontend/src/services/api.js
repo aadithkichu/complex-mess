@@ -1,8 +1,7 @@
 // frontend/src/services/api.js
 import { format } from 'date-fns';
 // Your backend URL
-const API_URL = import.meta.env.VITE_API_URL; 
-
+const API_URL = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL;
 // --- Helper for consistent API fetching ---
 const fetchApi = async (endpoint, options = {}) => {
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -44,14 +43,14 @@ const fetchApi = async (endpoint, options = {}) => {
 // ----------------------------------------------------
 
 export const apiLogin = (username, password) => {
-  return fetchApi('/auth/login', {
+  return fetchApi('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });
 };
 
 export const apiLogout = () => {
-  return fetchApi('/auth/logout', {
+  return fetchApi('/api/auth/logout', {
     method: 'POST',
     // No body needed; the server just destroys the session
   });
@@ -59,7 +58,7 @@ export const apiLogout = () => {
 
 export const apiCheckSession = () => {
   // Uses GET /api/auth/me
-  return fetchApi('/auth/me');
+  return fetchApi('/api/auth/me');
 };
 
 
@@ -69,12 +68,12 @@ export const apiCheckSession = () => {
 
 export const apiGetAllUsers = () => {
   // Uses GET /api/users (Public)
-  return fetchApi('/users');
+  return fetchApi('/api/users');
 };
 
 export const apiCreateUser = (userData) => {
   // Uses POST /api/users (Admin-only)
-  return fetchApi('/users', {
+  return fetchApi('/api/users', {
     method: 'POST',
     body: JSON.stringify(userData),
   });
@@ -82,7 +81,7 @@ export const apiCreateUser = (userData) => {
 
 export const apiUpdateUser = (id, userData) => {
   // Uses PUT /api/users/:id (Admin-only)
-  return fetchApi(`/users/${id}`, {
+  return fetchApi(`/api/users/${id}`, {
     method: 'PUT',
     body: JSON.stringify(userData),
   });
@@ -90,14 +89,14 @@ export const apiUpdateUser = (id, userData) => {
 
 export const apiDeleteUser = (id) => {
   // Uses DELETE /api/users/:id (Admin-only)
-  return fetchApi(`/users/${id}`, {
+  return fetchApi(`/api/users/${id}`, {
     method: 'DELETE',
   });
 };
 
 export const apiGetUserDetails = (id) => {
   // Uses GET /api/users/:id (Public, but provides detailed info)
-  return fetchApi(`/users/${id}`);
+  return fetchApi(`/api/users/${id}`);
 };
 
 
@@ -107,12 +106,12 @@ export const apiGetUserDetails = (id) => {
 
 export const apiGetCycleSettings = () => {
   // Uses GET /api/cycles (Public)
-  return fetchApi('/cycles');
+  return fetchApi('/api/cycles');
 };
 
 export const apiCreateNewCycle = (cycleData) => {
   // Uses POST /api/cycles (Admin-only)
-  return fetchApi('/cycles', {
+  return fetchApi('/api/cycles', {
     method: 'POST',
     body: JSON.stringify(cycleData),
   });
@@ -120,7 +119,7 @@ export const apiCreateNewCycle = (cycleData) => {
 
 export const apiUpdateCycleDates = (cycleId, dateData) => {
   // Uses PUT /api/cycles/:id (Admin-only)
-  return fetchApi(`/cycles/${cycleId}`, {
+  return fetchApi(`/api/cycles/${cycleId}`, {
     method: 'PUT',
     body: JSON.stringify(dateData),
   });
@@ -128,7 +127,7 @@ export const apiUpdateCycleDates = (cycleId, dateData) => {
 
 export const apiDeleteCycle = (cycleId) => {
   // Uses DELETE /api/cycles/:cycleId (Admin-only)
-  return fetchApi(`/cycles/${cycleId}`, {
+  return fetchApi(`/api/cycles/${cycleId}`, {
     method: 'DELETE',
   });
 };
@@ -137,7 +136,7 @@ export const apiChangeCycleMode = (cycleId, newMode) => {
   // 1. Accepts cycleId as the first argument.
   // 2. Uses backticks (`) for the template literal.
   // 3. Sends the newMode in the request body.
-  return fetchApi(`/cycles/mode/${cycleId}`, {
+  return fetchApi(`/api/cycles/mode/${cycleId}`, {
     method: 'PUT',
     body: JSON.stringify({ new_mode: newMode }),
   });
@@ -149,12 +148,12 @@ export const apiChangeCycleMode = (cycleId, newMode) => {
 
 export const apiGetTaskTemplates = () => {
   // Uses GET /api/tasks (Public)
-  return fetchApi('/tasks');
+  return fetchApi('/api/tasks');
 };
 
 export const apiCreateTaskTemplate = (taskData) => {
   // Uses POST /api/tasks (Admin-only)
-  return fetchApi('/tasks', {
+  return fetchApi('/api/tasks', {
     method: 'POST',
     body: JSON.stringify(taskData),
   });
@@ -162,7 +161,7 @@ export const apiCreateTaskTemplate = (taskData) => {
 
 export const apiUpdateTaskTemplate = (id, taskData) => {
   // Uses PUT /api/tasks/:id (Admin-only)
-  return fetchApi(`/tasks/${id}`, {
+  return fetchApi(`/api/tasks/${id}`, {
     method: 'PUT',
     body: JSON.stringify(taskData),
   });
@@ -170,7 +169,7 @@ export const apiUpdateTaskTemplate = (id, taskData) => {
 
 export const apiDeleteTaskTemplate = (id) => {
   // Uses DELETE /api/tasks/:id (Admin-only)
-  return fetchApi(`/tasks/${id}`, {
+  return fetchApi(`/api/tasks/${id}`, {
     method: 'DELETE',
   });
 };
@@ -188,14 +187,14 @@ export const apiGetHistoricalStats = (userId, filters) => {
     // CONSTRUCT THE ENDPOINT PATH, starting from the slash (/)
     const endpoint = `/users/${userId}/history${queryString ? '?' + queryString : ''}`;
 
-    // FIX: Use the central fetchApi helper
-    return fetchApi(endpoint); 
+    // FIX: Use the central fetchApi h/apielper
+    return fetchApi(e/apindpoint); 
 };
 
 export const apiGetAvailablePeriods = (userId) => {
     // Uses GET /api/user/:id/periods (Assumed new route)
     const endpoint = `/users/${userId}/periods`;
-    return fetchApi(endpoint); 
+    return fetchApi(e/apindpoint); 
 };
 
 // ----------------------------------------------------
@@ -204,12 +203,12 @@ export const apiGetAvailablePeriods = (userId) => {
 
 export const apiGetAvailabilitySummary = () => {
   // Uses GET /api/availability/summary (Admin-only)
-  return fetchApi('/availability/summary');
+  return fetchApi('/api/availability/summary');
 };
 
 export const apiSetSlotAvailability = (day, period, userIds) => {
   // Uses POST /api/availability/slot (Admin-only)
-  return fetchApi('/availability/slot', {
+  return fetchApi('/api/availability/slot', {
     method: 'POST',
     body: JSON.stringify({ day, period, userIds }),
   });
@@ -217,7 +216,7 @@ export const apiSetSlotAvailability = (day, period, userIds) => {
 
 export const apiSetFullDayAvailability = (day, isChecked, allUserIds) => {
   // Uses POST /api/availability/fullday (Admin-only)
-  return fetchApi('/availability/fullday', {
+  return fetchApi('/api/availability/fullday', {
     method: 'POST',
     body: JSON.stringify({ day, isChecked, allUserIds }),
   });
@@ -230,7 +229,7 @@ export const apiSetFullDayAvailability = (day, isChecked, allUserIds) => {
 export const apiGetAllCycles = () => {
   // Uses GET /api/cycles/all (NEW)
   // This should return all cycles, not just the active one
-  return fetchApi('/cycles/all');
+  return fetchApi('/api/cycles/all');
 };
 
 // ----------------------------------------------------
@@ -243,7 +242,7 @@ export const apiGetTaskLogsForGrid = (cycleId, templateIds) => {
   params.append('cycleId', cycleId);
   params.append('templates', templateIds.join(','));
   
-  return fetchApi(`/logbook/grid?${params.toString()}`);
+  return fetchApi(`/api/logbook/grid?${params.toString()}`);
 };
 
 export const apiGetAvailableUsersForSlot = (dayKey, period, cycleId, templateId, date) => {
@@ -255,7 +254,7 @@ export const apiGetAvailableUsersForSlot = (dayKey, period, cycleId, templateId,
   params.append('templateId', templateId);
   params.append('date', date); // Already formatted yyyy-MM-dd
   
-  return fetchApi(`/logbook/available?${params.toString()}`);
+  return fetchApi(`/api/logbook/available?${params.toString()}`);
 };
 
 export const apiGetTaskLogForSlot = (cycleId, templateId, date) => {
@@ -265,12 +264,12 @@ export const apiGetTaskLogForSlot = (cycleId, templateId, date) => {
   params.append('templateId', templateId);
   params.append('date', format(date, 'yyyy-MM-dd'));
   
-  return fetchApi(`/logbook/slot?${params.toString()}`);
+  return fetchApi(`/api/logbook/slot?${params.toString()}`);
 };
 
 export const apiLogTask = (payload) => {
   // Uses POST /api/logbook
-  return fetchApi('/logbook', {
+  return fetchApi('/api/logbook', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -279,7 +278,7 @@ export const apiLogTask = (payload) => {
 // 1. Rename function and change to POST
 export const apiCalculateAndGetStandings = (cycleId) => {
   // Uses POST /api/standings/calculate
-  return fetchApi('/standings/calculate', {
+  return fetchApi('/api/standings/calculate', {
     method: 'POST',
     body: JSON.stringify({ cycleId }),
   });
@@ -287,11 +286,11 @@ export const apiCalculateAndGetStandings = (cycleId) => {
 
 export const apiGetSlotRecommendations = (cycleId) => {
   // Uses GET /api/recommendations/:cycleId
-  return fetchApi(`/recommendations/${cycleId}`);
+  return fetchApi(`/api/recommendations/${cycleId}`);
 };
 
 export const apiLockCycleAvailability = (cycleId) => {
-  return fetchApi(`/cycles/${cycleId}/lock-availability`, {
+  return fetchApi(`/api/cycles/${cycleId}/lock-availability`, {
     method: 'POST',
   });
 };
@@ -303,9 +302,9 @@ export const apiLockCycleAvailability = (cycleId) => {
 export const apiGetHistoricalRankings = (filters) => {
     const params = new URLSearchParams(filters);
     const queryString = params.toString();
-    return fetchApi(`/users/rankings/history${queryString ? '?' + queryString : ''}`);
+    return fetchApi(`/api/users/rankings/history${queryString ? '?' + queryString : ''}`);
 };
 
 export const apiGetBestMonthlyRankings = () => {
-    return fetchApi('/users/rankings/monthly-best');
+    return fetchApi('/api/users/rankings/monthly-best');
 };
