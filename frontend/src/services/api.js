@@ -187,14 +187,14 @@ export const apiGetHistoricalStats = (userId, filters) => {
     // CONSTRUCT THE ENDPOINT PATH, starting from the slash (/)
     const endpoint = `/users/${userId}/history${queryString ? '?' + queryString : ''}`;
 
-    // FIX: Use the central fetchApi h/apielper
-    return fetchApi(e/apindpoint); 
+    // FIX: Use the central fetchApi helper
+    return fetchApi(endpoint); 
 };
 
 export const apiGetAvailablePeriods = (userId) => {
     // Uses GET /api/user/:id/periods (Assumed new route)
     const endpoint = `/users/${userId}/periods`;
-    return fetchApi(e/apindpoint); 
+    return fetchApi(endpoint);
 };
 
 // ----------------------------------------------------
