@@ -105,6 +105,7 @@ export const createNewCycle = async (req, res) => {
         
         // 5. Create the new cycle (Model.create is now simple)
         const newCycleId = await CycleModel.create(newCycleData);
+        await CycleModel.initializeTargetsForNewCycle(newCycleId);
         
         res.status(201).json({ 
             message: 'New cycle created successfully. Timeline was surgically trimmed.', 
@@ -117,6 +118,28 @@ export const createNewCycle = async (req, res) => {
             message: 'A severe server error occurred during cycle creation.',
             debug: error.message
         });
+    }
+};
+
+export const deleteCycle = async (req, res) => {
+    try {
+        const cycleId = req.params.cycleId;
+        
+        if (!cycleId || isNaN(parseInt(cycleId))) {
+            return res.status(400).json({ message: 'Invalid Cycle ID.' });
+        }
+
+        const deleted = await CycleModel.deleteCycle(cycleId);
+
+        if (!deleted) {
+            return res.status(404).json({ message: 'Cycle not found or was already deleted.' });
+        }
+
+        res.status(200).json({ message: 'Cycle successfully deleted.' });
+        
+    } catch (error) {
+        console.error('[FATAL CYCLE DELETE ERROR]:', error);
+        res.status(500).json({ message: 'Server error deleting cycle.', error: error.message });
     }
 };
 
@@ -198,28 +221,74 @@ export const updateCycle = async (req, res) => {
     }
 };
 
+
+export const lockCycleAvailability = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { cycleId } = req.params;
+        
+        await connection.beginTransaction();
+        
+        // 1. (Optional but recommended) Re-run objective calculations
+        //     to ensure they are based on the latest snapshot.
+        //     This assumes you have access to StandingModel.
+        // await StandingModel.recalculateLegacy(cycleId, connection);
+        // await StandingModel.recalculateGroup(cycleId, connection);
+        
+        // 2. Snapshot the availability
+        await CycleModel.snapshotAvailability(cycleId, connection);
+        
+        await connection.commit();
+        res.status(200).json({ message: 'Availability snapshot for cycle locked successfully.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error locking cycle availability:", error);
+        res.status(500).json({ message: 'Server error locking availability', error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+};
+
+export const getAllCycles = async (req, res) => {
+    try {
+        const cycles = await CycleModel.getAll();
+        res.status(200).json(cycles);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching all cycles', error: error.message });
+    }
+};
+
 // --- ADMIN: Change Mode of Active Cycle ---
 export const changeCycleMode = async (req, res) => {
+    // 1. Retrieve cycleId from URL parameters
+    const cycleId = req.params.cycleId; 
     const { new_mode } = req.body;
+
+    if (!cycleId || isNaN(parseInt(cycleId))) {
+         return res.status(400).json({ message: 'Invalid or missing Cycle ID.' });
+    }
 
     if (new_mode !== 'Legacy' && new_mode !== 'Group') {
         return res.status(400).json({ message: 'Invalid calculation mode.' });
     }
     
     try {
-        const currentCycle = await CycleModel.getCurrentActive();
+        // 2. Check if the cycle exists and get its name for the response
+        const cycle = await CycleModel.getById(cycleId);
         
-        if (!currentCycle) {
-             return res.status(404).json({ message: 'No active cycle to change mode for.' });
+        if (!cycle) {
+             // Use 404 since the target resource (cycle) wasn't found
+             return res.status(404).json({ message: 'Target cycle not found.' });
         }
         
+        // 3. Update the specific cycle using the ID from params
         await pool.query(
             'UPDATE cycles SET calculation_mode = ? WHERE cycle_id = ?',
-            [new_mode, currentCycle.cycle_id]
+            [new_mode, cycleId]
         );
 
         res.status(200).json({ 
-            message: `Mode for cycle '${currentCycle.cycle_name}' updated to ${new_mode}.` 
+            message: `Mode for cycle '${cycle.cycle_name}' updated to ${new_mode}.` 
         });
 
     } catch (error) {

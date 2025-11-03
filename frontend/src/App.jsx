@@ -3,11 +3,23 @@ import HomePage from './pages/HomePage.jsx';
 import Navbar from './components/common/Navbar.jsx';
 import AuthProvider from './hooks/useAuth.jsx';
 import './index.css'; // we'll use index.css for global Tailwind + GitHub style
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Toaster 
+          position="top-right" // You can change this
+          toastOptions={{
+            // Define default options
+            duration: 5000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
         <Navbar />
         <main className="min-h-screen bg-[#f6f8fa] pb-10 text-[#1f2328]">
           <div className="max-w-7xl mx-auto pt-6 px-4 sm:px-6 lg:px-8">

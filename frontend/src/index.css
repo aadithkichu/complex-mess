@@ -2,37 +2,59 @@
 
 /* GitHub-like palette */
 :root {
-  --bg-default: #f6f8fa;
-  --bg-dark: #24292f;
-  --border-default: #d0d7de;
-  --text-default: #1f2328;
-  --text-muted: #656d76;
-  --accent-blue: #0969da;
+  /* --- LIGHT MODE (Default) --- */
+  --bg-default: #f6f8fa; /* Main background */
+  --bg-dark: #24292f; /* Navbar/Header background */
+  --border-default: #d0d7de; 
+  --text-default: #1f2328; 
+  --text-muted: #656d76; 
+  --accent-blue: #0969da; 
+}
+
+/* --- DARK MODE PALETTE --- */
+[data-theme='dark'] {
+  /* Backgrounds */
+  --bg-default: #0d1117; /* Main background (Dark) */
+  --bg-dark: #161b22; /* Navbar/Header background (Dark) */
+  
+  /* Borders & Text */
+  --border-default: #30363d; 
+  --text-default: #c9d1d9; 
+  --text-muted: #8b949e; 
+  
+  /* Accent */
+  --accent-blue: #58a6ff; 
 }
 
 /* Base styles */
 body {
   @apply font-sans text-[15px] antialiased;
-  background: var(--bg-default);
+  /* CRITICAL: Use variables for base colors */
+  background: var(--bg-default); 
   color: var(--text-default);
 }
 
 /* Navbar */
 .navbar {
-  background: var(--bg-dark);
-  color: white;
+  /* CRITICAL: Use variables for colors */
+  background: var(--bg-dark); 
+  color: var(--text-default); 
   @apply flex items-center justify-between px-8 py-3 shadow;
 }
 
 /* Card/section styling */
 .card {
-  @apply bg-white border rounded-lg p-5 mb-6;
+  /* CRITICAL: Use variables for background and border */
+  @apply border rounded-lg p-5 mb-6;
+  background: var(--bg-default); 
   border-color: var(--border-default);
 }
 
 /* Section titles */
 .section-title {
-  @apply text-lg font-semibold mb-3 border-b border-gray-200 pb-1;
+  @apply text-lg font-semibold mb-3 border-b pb-1;
+  border-color: var(--border-default); /* Use variable for border */
+  color: var(--text-default); /* Ensure title text color is correct */
 }
 
 /* Buttons */

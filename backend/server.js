@@ -8,6 +8,11 @@ import pool from './utils/db.js'; // <-- Keep this for your Models
 import authRoutes from './routes/authRoutes.js';   
 import userRoutes from './routes/userRoutes.js';   
 import cycleRoutes from './routes/cycleRoutes.js'; 
+import taskRoutes from './routes/taskRoutes.js';
+import availabilityRoutes from './routes/availabilityRoutes.js';
+import logbookRoutes from './routes/logbookRoutes.js';
+import standingRoutes from './routes/standingRoutes.js';
+import recommendationRoutes from './routes/recommendationRoutes.js';
 
 // 1. Ensure dotenv runs immediately at the top
 dotenv.config();
@@ -38,7 +43,7 @@ const store = new MySQLStoreInstance(sessionOptions);
 
 // 4. CORS (Cross-Origin Resource Sharing)
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173','http://192.168.1.14:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -70,8 +75,14 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes); // For logging in/out
 app.use('/api/users', userRoutes); // For managing the member list
 app.use('/api/cycles', cycleRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/logbook', logbookRoutes);
+app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/standings', standingRoutes);
 
 // ... (Server Startup) ...
 app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+

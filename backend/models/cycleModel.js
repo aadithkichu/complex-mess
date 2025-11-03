@@ -10,7 +10,15 @@ import {
     findPeriodForTime 
 } from '../utils/timeConstants.js'; 
 
+const MEMBER_NO_LOGIN_PASSWORD_HASH = 'N/A_MEMBER_NO_LOGIN'; // Ensure this matches your actual hash
+
 export class CycleModel {
+
+    static async getAll() {
+        const sql = "SELECT * FROM cycles ORDER BY start_date DESC";
+        const [rows] = await pool.execute(sql);
+        return rows;
+    }
 
     // --- Helper: Get precise boundaries (Pure JS) ---
     static getCycleBoundaries(cycle) {
@@ -30,6 +38,34 @@ export class CycleModel {
             startBoundaryString, 
             endBoundaryString  
         };
+    }
+
+    static async snapshotAvailability(cycleId, connection) {
+        const conn = connection || pool; // Use transaction if provided
+        
+        // 1. Delete all old snapshots for this cycle to start fresh
+        await conn.execute(
+            'DELETE FROM cycle_availability WHERE cycle_id = ?',
+            [cycleId]
+        );
+
+        // 2. Copy the current global availability into the snapshot table
+        const sql = `
+            INSERT INTO cycle_availability (cycle_id, user_id, day_of_week, time_of_day)
+            SELECT
+                ? AS cycle_id, -- The target cycle_id
+                ma.user_id,
+                ma.day_of_week,
+                ma.time_of_day
+            FROM
+                member_availability ma
+            JOIN
+                users u ON ma.user_id = u.user_id
+            WHERE
+                u.password_hash = ? -- Only non-admin users
+        `;
+        
+        await conn.execute(sql, [cycleId, MEMBER_NO_LOGIN_PASSWORD_HASH]);
     }
 
     // --- Get current (active) cycle details ---
@@ -212,20 +248,102 @@ static async performSurgicalTrim(newCycleData, overlappingCycles) {
         return true;
     }
 
-    // --- Destructive Cleanup for *Updated* Cycle's internal data ---
     static async cleanupDataForUpdate(cycleId, newCycleData) {
-        const { start_date, end_date, start_period, end_period } = newCycleData;
+        const connection = await pool.getConnection();
 
-        const newAbsoluteStart = getBoundaryDateTime(start_date, start_period, true);
-        const newAbsoluteEnd = getBoundaryDateTime(end_date, end_period, false);
-        
-        await pool.query(
-            `DELETE FROM task_log WHERE cycle_id = ? AND (task_datetime < ? OR task_datetime > ?)`,
-            [cycleId, newAbsoluteStart, newAbsoluteEnd]
+        // 1. Calculate the New Boundaries (as SQL DATETIME strings)
+        // We use these boundaries to determine which *existing* logs are now invalid.
+        const newCycleStartBoundary = getBoundaryDateTime(
+            newCycleData.start_date, 
+            newCycleData.start_period, 
+            true // isStart
+        );
+        const newCycleEndBoundary = getBoundaryDateTime(
+            newCycleData.end_date, 
+            newCycleData.end_period, 
+            false // isEnd
         );
         
-        await pool.query(`DELETE FROM cycle_targets WHERE cycle_id = ?`, [cycleId]);
-        return true;
+        try {
+            await connection.beginTransaction();
+
+            // --- CRITICAL FIX: REWRITE SQL QUERY ---
+            // We must CONCATENATE task_date and a hardcoded period end time 
+            // to recreate a DATETIME for comparison.
+            const deleteTasksSql = `
+                DELETE FROM task_log
+                WHERE cycle_id = ? 
+                  AND (
+                      -- Check if the task is BEFORE the new start boundary
+                      STR_TO_DATE(
+                          CONCAT(task_date, ' ', 
+                              CASE time_period
+                                  WHEN 'Morning' THEN '11:00:00'
+                                  WHEN 'Noon' THEN '17:00:00'
+                                  WHEN 'Evening' THEN '23:59:59'
+                              END
+                          ), 
+                          '%Y-%m-%d %H:%i:%s'
+                      ) < ? 
+                      -- OR check if the task is AFTER the new end boundary
+                      OR STR_TO_DATE(
+                          CONCAT(task_date, ' ', 
+                              CASE time_period
+                                  WHEN 'Morning' THEN '06:00:00'
+                                  WHEN 'Noon' THEN '11:00:01'
+                                  WHEN 'Evening' THEN '17:00:01'
+                              END
+                          ), 
+                          '%Y-%m-%d %H:%i:%s'
+                      ) > ?
+                  )
+            `;
+
+            // Note: We use the boundary strings calculated outside the loop.
+            await connection.query(deleteTasksSql, [
+                cycleId, 
+                newCycleStartBoundary, 
+                newCycleEndBoundary
+            ]);
+            
+            // Delete cycle targets that might have been partially trimmed (Optional, but safe)
+            await connection.execute(
+                "DELETE FROM cycle_targets WHERE cycle_id = ?",
+                [cycleId]
+            );
+
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            console.error('[FATAL CLEANUP ERROR]:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    static async getById(cycleId) {
+        const sql = "SELECT * FROM cycles WHERE cycle_id = ?";
+        const [rows] = await pool.execute(sql, [cycleId]);
+        return rows[0]; // Returns the full cycle object
+    }
+
+    static async deleteCycle(cycleId) {
+        const [result] = await pool.execute(
+            'DELETE FROM cycles WHERE cycle_id = ?', 
+            [cycleId]
+        );
+        return result.affectedRows > 0;
+    }
+    static async initializeTargetsForNewCycle(newCycleId) {
+        const sql = `
+            INSERT INTO cycle_targets (cycle_id, user_id, point_objective, credits_earned)
+            SELECT ?, user_id, 0.00, 0
+            FROM users
+            WHERE password_hash = ? -- Only non-admin members
+        `;
+        // Assuming MEMBER_NO_LOGIN_PASSWORD_HASH is correctly defined and imported
+        await pool.execute(sql, [newCycleId, MEMBER_NO_LOGIN_PASSWORD_HASH]);
     }
 
     // --- Helper: Get all time periods for frontend ---

@@ -10,10 +10,8 @@ USE complex_mess;
 -- ---
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    -- "last day of mess" - for the priority system
-    mess_active_until DATE NULL, 
+    name VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -87,7 +85,7 @@ CREATE TABLE IF NOT EXISTS cycle_targets (
     credits_earned INT NOT NULL DEFAULT 0,
 
     UNIQUE KEY (cycle_id, user_id), -- A user has only one target per cycle
-    FOREIGN KEY (cycle_id) REFERENCES cycles(cycle_id),
+    FOREIGN KEY (cycle_id) REFERENCES cycles(cycle_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
@@ -100,23 +98,34 @@ CREATE TABLE IF NOT EXISTS task_log (
     -- Link to the job type (e.g., "Mess Delivery - Noon")
     template_id INT NOT NULL, 
     
-    task_datetime DATETIME NOT NULL,
-    
-    -- 'Pending' = Not logged yet
-    -- 'Completed' = Admin has confirmed the result
-    status ENUM('Pending', 'Completed') NOT NULL DEFAULT 'Pending',
-    
-    -- Who actually did the job
-    -- This is NULL if "Delivered by other"
+    -- The date/time the confirmed job was completed
+    task_date DATE NOT NULL,
+    time_period ENUM('Morning', 'Noon', 'Evening') NOT NULL,
     user_id INT NULL, 
     
     -- The actual points earned for this task
     -- 0 if "Delivered by other", 1.0 if "1 person", etc.
-    points_earned DECIMAL(5, 2) DEFAULT 0,
+    points_earned DECIMAL(5, 2) NOT NULL DEFAULT 0,
     
     notes TEXT,
 
-    FOREIGN KEY (cycle_id) REFERENCES cycles(cycle_id),
+    FOREIGN KEY (cycle_id) REFERENCES cycles(cycle_id) ON DELETE CASCADE,
     FOREIGN KEY (template_id) REFERENCES task_templates(template_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS cycle_availability (
+    availability_id INT AUTO_INCREMENT PRIMARY KEY,
+    cycle_id INT NOT NULL,
+    user_id INT NOT NULL,
+    
+    day_of_week INT NOT NULL, 
+    time_of_day ENUM('Morning', 'Noon', 'Evening') NOT NULL,
+
+    -- A user can only have one entry for a specific slot *per cycle*
+    UNIQUE KEY (cycle_id, user_id, day_of_week, time_of_day),
+    
+    -- If a user or cycle is deleted, these snapshot rows go with them
+    FOREIGN KEY (cycle_id) REFERENCES cycles(cycle_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
