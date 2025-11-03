@@ -195,15 +195,15 @@ export const getUserDetails = async (req, res) => {
     }
     const taskHistory = await UserModel.getUserTaskHistory(userId);
     const currentCycle = await CycleModel.getCurrentActive();
-    const availabilityData = await UserModel.getUserAvailability(userId , currentCycle.cycle_id);
     const totalCredit = await UserModel.getUserTotalCredit(userId);
-
+    let availabilityData = [];
     let objective = 0;
     let earned = 0;
     let currentCycleRank = null;
     let detailedCycleMetrics = null;
 
     if (currentCycle) {
+        availabilityData = await UserModel.getUserAvailability(userId, currentCycle.cycle_id);
         const targetData = await UserModel.getUserCurrentTarget(userId, currentCycle.cycle_id);
         objective = targetData?.point_objective || 0;
         earned = await UserModel.getUserCurrentEarned(userId, currentCycle.cycle_id);
