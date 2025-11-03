@@ -29,7 +29,7 @@ const store = new MySQLStoreInstance({
     // The store will now use the pool's connection details
 }, pool);
 // --- Core Middleware ---
-const isDevelopment = process.env.NODE_ENV !== 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
 // 4. CORS (Cross-Origin Resource Sharing)
 app.use(cors({
   origin: ['http://localhost:5173','http://192.168.1.14:5173','https://complex-mess.vercel.app'],
