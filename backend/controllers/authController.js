@@ -35,6 +35,18 @@ export const login = async (req, res) => {
       // Set session for Super Admin
       req.session.isAdmin = true;
       req.session.userId = 'SUPER_ADMIN_001'; // Static ID for the admin
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Server error during session save.' });
+        }
+
+        // Now that the session is saved, send the response
+        return res.status(200).json({
+          message: 'Super Admin login successful',
+          user: { username: superAdminUsername, user_id: 'SUPER_ADMIN_001' },
+        });
+      });
       
       return res.status(200).json({
         message: 'Super Admin login successful',
