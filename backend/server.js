@@ -3,8 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import session from 'express-session'; 
 import MySQLStore from 'express-mysql-session'; 
-import pool from './utils/db.js'; // <-- Keep this for your Models
-
+import pool, { testDbConnection } from './utils/db.js';
 import authRoutes from './routes/authRoutes.js';   
 import userRoutes from './routes/userRoutes.js';   
 import cycleRoutes from './routes/cycleRoutes.js'; 
@@ -23,24 +22,14 @@ const PORT = process.env.PORT || 5001;
 // --- Database Session Store Setup ---
 const MySQLStoreInstance = MySQLStore(session);
 
-// 2. Pass the DB connection details explicitly using environment variables
-const sessionOptions = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,        // <-- Explicitly read user
-    password: process.env.DB_PASS,    // <-- Explicitly read password
-    database: process.env.DB_NAME,
-
-    // ... other options ...
+const store = new MySQLStoreInstance({
     createDatabaseTable: true,
     checkExpirationInterval: 900000,
     expiration: 2592000000, // 30 days
-};
-
-// 3. Initialize the store
-const store = new MySQLStoreInstance(sessionOptions); 
-
+    // The store will now use the pool's connection details
+}, pool);
 // --- Core Middleware ---
-
+const isDevelopment = process.env.NODE_ENV !== 'production';
 // 4. CORS (Cross-Origin Resource Sharing)
 app.use(cors({
   origin: ['http://localhost:5173','http://192.168.1.14:5173','https://complex-mess.vercel.app'],
@@ -59,11 +48,11 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 2592000000,
     httpOnly: true,
-    secure: false, 
-    sameSite: 'lax',
-  }
+    secure: !isDevelopment,                    // must be true on HTTPS (Render)
+    sameSite: !isDevelopment ? 'None' : 'Lax', // allow cross-site cookies
+    maxAge: 1000 * 60 * 60 * 60,                  // 1 hour
+  },
 }));
 
 
@@ -81,8 +70,19 @@ app.use('/api/logbook', logbookRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/standings', standingRoutes);
 
-// ... (Server Startup) ...
 app.listen(PORT, async () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  try {
+    // 1. Test the database connection first
+    await testDbConnection();
+    
+    // 2. If it succeeds, start the server
+    console.log(`Server is running on http://localhost:${PORT}`);
+  } catch (error) {
+    // 3. If it fails, log the error and stop the app
+    console.error('--- ❌ FAILED TO START SERVER ---');
+    console.error('Database connection failed. Check .env variables on Render.');
+    console.error(error.message);
+    process.exit(1); // This stops the server from running in a broken state
+  }
 });
 
