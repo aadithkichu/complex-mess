@@ -185,7 +185,7 @@ export const apiGetHistoricalStats = (userId, filters) => {
     const queryString = params.toString();
     
     // CONSTRUCT THE ENDPOINT PATH, starting from the slash (/)
-    const endpoint = `/users/${userId}/history${queryString ? '?' + queryString : ''}`;
+    const endpoint = `/api/users/${userId}/history${queryString ? '?' + queryString : ''}`;
 
     // FIX: Use the central fetchApi helper
     return fetchApi(endpoint); 
@@ -193,7 +193,7 @@ export const apiGetHistoricalStats = (userId, filters) => {
 
 export const apiGetAvailablePeriods = (userId) => {
     // Uses GET /api/user/:id/periods (Assumed new route)
-    const endpoint = `/users/${userId}/periods`;
+    const endpoint = `/api/users/${userId}/periods`;
     return fetchApi(endpoint);
 };
 
