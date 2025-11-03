@@ -2,7 +2,8 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://complex-mess.onrender.com/api/:path*"
+      "destination": "https://complex-mess.onrender.com/api/:path*",
+      "proxyPass": true
     }
   ]
 }
