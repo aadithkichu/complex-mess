@@ -43,7 +43,7 @@ const store = new MySQLStoreInstance(sessionOptions);
 
 // 4. CORS (Cross-Origin Resource Sharing)
 app.use(cors({
-  origin: ['http://localhost:5173','http://192.168.1.14:5173','https://complex-mess.vercel.app/'],
+  origin: ['http://localhost:5173','http://192.168.1.14:5173','https://complex-mess.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
