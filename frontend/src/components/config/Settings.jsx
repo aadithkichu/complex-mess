@@ -176,7 +176,7 @@ if (allCycles.length === 0) {
              <select
                  value={selectedCycleId || ''}
                  onChange={(e) => setSelectedCycleId(parseInt(e.target.value, 10))}
-                 className="p-1 border rounded bg-white text-sm focus:ring-blue-500 focus:border-blue-500"
+                 className="p-1 border rounded bg-white text-sm focus:ring-blue-500 focus:border-blue-500 max-w-full overflow-hidden truncate"
              >
                  {allCycles.map(cycle => (
                      <option key={cycle.cycle_id} value={cycle.cycle_id}>
