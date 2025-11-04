@@ -2,6 +2,10 @@
 /backend/node_modules
 /frontend/node_modules
 
+# Ignore Firebase service key
+backend/serviceAccountKey.json
+
+
 .env
 .env.*
 !.env.example

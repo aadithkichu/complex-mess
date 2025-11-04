@@ -12,6 +12,7 @@ import availabilityRoutes from './routes/availabilityRoutes.js';
 import logbookRoutes from './routes/logbookRoutes.js';
 import standingRoutes from './routes/standingRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 // 1. Ensure dotenv runs immediately at the top
 dotenv.config();
@@ -56,7 +57,7 @@ app.use(session({
   },
 }));
 
-
+app.use("/api", notificationRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from the Complex-Mess API!' });
 });
