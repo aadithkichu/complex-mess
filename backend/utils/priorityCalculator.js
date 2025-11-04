@@ -79,8 +79,12 @@ function findLastAvailableSlotInCycle(availability, cycleEndDate, now, cycleEndP
                 
                 // c) Check past/present time (Create a precise slot time for comparison)
                 const timePart = TIME_PERIODS[period].start_time;
+                const parts = timePart.split(':'); // e.g., ['17', '00', '01']
+
                 const slotTime = cursorDay.set({ 
-                    hour: parseInt(timePart.split(':')[0])
+                    hour: parseInt(parts[0]),
+                    minute: parseInt(parts[1]),
+                    second: parseInt(parts[2])
                 });
                 
                 // The slot must not have already passed, unless the cycle boundary logic forces it.
@@ -114,7 +118,6 @@ function countPeriodsBetween(start, end, availability) { // Replaced TIME_PERIOD
 
   // --- FIX: Create availableSlotsSet using the passed 'availability' list ---
   const availableSlotsSet = new Set(availability.map(slot => `${slot.day_of_week}:${slot.time_of_day}`));
-
   while (current <= end) {
     const period = findPeriodForTime(current.toFormat('HH:mm:ss')); // Call without TIME_PERIODS
     const dayOfWeek = current.weekday === 7 ? 0 : current.weekday;
