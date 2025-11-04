@@ -1,15 +1,19 @@
+// firebaseAdmin.js
 import admin from "firebase-admin";
-import serviceAccount from "./serviceAccountKey.json" assert { type: "json" };
+import fs from "fs";
+
+const serviceAccount = JSON.parse(
+  fs.readFileSync(new URL("./serviceAccountKey.json", import.meta.url))
+);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 export const sendPushNotification = async (token, title, body) => {
-  const message = {
-    notification: { title, body },
+  await admin.messaging().send({
     token,
-  };
-  await admin.messaging().send(message);
-  console.log("✅ Notification sent");
+    notification: { title, body },
+  });
+  console.log("✅ Notification sent to:", token);
 };
