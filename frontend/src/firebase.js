@@ -1,3 +1,5 @@
+// src/firebase.js
+
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
@@ -13,19 +15,24 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+const messaging = getMessaging(app);
 
-// Request permission and get FCM token
-export const requestPermission = async () => {
+// ✅ Exported function to request permission and get FCM token
+export async function requestPermissionAndGetToken() {
   console.log("Requesting notification permission...");
   const permission = await Notification.requestPermission();
+
   if (permission === "granted") {
     const token = await getToken(messaging, {
-      vapidKey: "BFPkFUQD2wCyUvYc20QOGDmwi0QwrDebLVp_mIoT6Fb_oiswrqNePSzAfb4jsbFc3jd2pSeMQD-DI80naA-Yw4M", // from Firebase console
+      vapidKey: "BFPkFUQD2wCyUvYc20QOGDmwi0QwrDebLVp_mIoT6Fb_oiswrqNePSzAfb4jsbFc3jd2pSeMQD-DI80naA-Yw4M", // replace with your VAPID key
     });
-    console.log("FCM Token:", token);
+    console.log("✅ FCM Token:", token);
     return token;
   } else {
-    console.log("Notification permission denied");
+    console.log("❌ Permission not granted for notifications");
+    return null;
   }
-};
+}
+
+// ✅ Export messaging so other modules can listen for messages
+export { messaging, onMessage };

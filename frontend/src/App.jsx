@@ -5,11 +5,11 @@ import Navbar from './components/common/Navbar.jsx';
 import AuthProvider from './hooks/useAuth.jsx';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
-import { requestPermission } from "./firebase";
+import { requestPermissionAndGetToken } from "./firebase";
 
 function App() {
   useEffect(() => {
-    requestPermission(); // ask for notification permission and get token
+    requestPermissionAndGetToken(); // ask for notification permission and get token
   }, []);
 
   return (
