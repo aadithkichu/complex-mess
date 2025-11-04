@@ -16,7 +16,6 @@ export const calculateAndGetStandings = async (req, res) => {
         if (!cycle) {
             return res.status(404).json({ message: "Cycle not found" });
         }
-        await CycleModel.snapshotAvailability(cycleId, connection);
 
         // 2. Run the objective re-calculation
         if (cycle.calculation_mode === 'Legacy') {
