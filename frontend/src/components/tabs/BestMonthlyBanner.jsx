@@ -63,7 +63,7 @@ export default function BestMonthlyBanner() {
         return () => clearInterval(timer);
     }, []);
 
-    if (loading) return <div className="h-40 bg-gray-700 rounded-lg p-6 flex items-center justify-center text-white">Loading Current Month's Top Performers...</div>;
+    if (loading) return <div className="h-40 bg-gray-700 rounded-lg p-6 flex items-center justify-center text-white">Loading All Time Top Performers...</div>;
     if (topPerformers.length === 0 || !topPerformers[0].topUser) {
         return (
             <div className="h-40 bg-gray-700 rounded-lg p-6 flex items-center justify-center text-white">
