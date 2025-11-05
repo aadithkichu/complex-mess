@@ -26,6 +26,7 @@ export const getAvailableUsersForSlot = async (req, res) => {
         const users = await LogbookModel.getAvailableUsers(day, period, cycleId, templateId, date);
         res.status(200).json(users);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ message: 'Error fetching available users', error: error.message });
     }
 };

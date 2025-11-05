@@ -28,27 +28,38 @@ export class LogbookModel {
     // Updated Union Query: Used by LogTaskModal to combine availability and existing logs
     static async getAvailableUsers(dayKey, period, cycleId, templateId, dateString) {
         const sql = `
+           WITH SlotCheck AS (
+                SELECT 
+                    EXISTS (
+                        SELECT 1
+                        FROM cycle_availability ca
+                        WHERE ca.day_of_week = ?  -- Param 1: dayKey
+                        AND ca.time_of_day = ?  -- Param 2: period
+                        AND ca.cycle_id = ?     -- Param 3: cycleId
+                    ) AS is_active
+            )
+
+            -- 2. Get ALL users, but only if SlotCheck.is_active is true
             (
-                -- Get available users FROM THE SNAPSHOT
                 SELECT u.user_id, u.name
                 FROM users u
-                JOIN cycle_availability ma ON u.user_id = ma.user_id -- <-- CHANGED
-                WHERE ma.day_of_week = ? 
-                  AND ma.time_of_day = ?
-                  AND ma.cycle_id = ? -- <-- ADDED
+                CROSS JOIN SlotCheck sc
+                WHERE sc.is_active = 1  -- <-- This part is GATED
             )
             UNION
+            -- 3. Get users already logged (this part is NOT gated)
             (
-                -- Get users already logged for this slot (in case they are no longer available)
                 SELECT u.user_id, u.name
                 FROM users u
                 JOIN task_log tl ON u.user_id = tl.user_id
-                WHERE tl.cycle_id = ? AND tl.template_id = ? AND tl.task_date = ?
+                WHERE tl.cycle_id = ?     -- Param 4: cycleId
+                AND tl.template_id = ?  -- Param 5: templateId
+                AND tl.task_date = ?    -- Param 6: dateString
             )
-            ORDER BY name ASC
+            ORDER BY name ASC;
         `;
         // Parameters: dayKey, period, cycleId, templateId, dateString
-        const [rows] = await pool.execute(sql, [dayKey, period, cycleId, cycleId , templateId, dateString]);
+        const [rows] = await pool.execute(sql, [dayKey, period, cycleId, cycleId, templateId, dateString]);
         return rows;
     }
 

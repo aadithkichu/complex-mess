@@ -203,24 +203,24 @@ export const getUserDetails = async (req, res) => {
     let detailedCycleMetrics = null;
 
     if (currentCycle) {
-        availabilityData = await UserModel.getUserAvailability(userId, currentCycle.cycle_id);
-        const targetData = await UserModel.getUserCurrentTarget(userId, currentCycle.cycle_id);
-        objective = targetData?.point_objective || 0;
-        earned = await UserModel.getUserCurrentEarned(userId, currentCycle.cycle_id);
-        const allUserPoints = await UserModel.getAllUsersCurrentCyclePoints(currentCycle.cycle_id);
+      availabilityData = await UserModel.getUserAvailability(userId, currentCycle.cycle_id);
+      const targetData = await UserModel.getUserCurrentTarget(userId, currentCycle.cycle_id);
+      objective = targetData?.point_objective || 0;
+      earned = await UserModel.getUserCurrentEarned(userId, currentCycle.cycle_id);
+      const allUserPoints = await UserModel.getAllUsersCurrentCyclePoints(currentCycle.cycle_id);
+      
+      // Sort and calculate rank based on the ratio (earned / objective)
+      allUserPoints.sort((a, b) => {
+        const ratioA = (a.objective > 0) ? a.earned / a.objective : (a.earned > 0 ? Infinity : 0);
+        const ratioB = (b.objective > 0) ? b.earned / b.objective : (b.earned > 0 ? Infinity : 0);
+        return ratioB - ratioA; // Descending order (higher ratio is better rank)
+      });
 
-        // Sort and calculate rank based on the ratio (earned / objective)
-        allUserPoints.sort((a, b) => {
-            const ratioA = (a.objective > 0) ? a.earned / a.objective : (a.earned > 0 ? Infinity : 0);
-            const ratioB = (b.objective > 0) ? b.earned / b.objective : (b.earned > 0 ? Infinity : 0);
-            return ratioB - ratioA; // Descending order (higher ratio is better rank)
-        });
-
-        const userIndex = allUserPoints.findIndex(u => u.user_id == userId); // Use == for comparison
-        currentCycleRank = userIndex !== -1 ? userIndex + 1 : 'N/A';
-
-        detailedCycleMetrics = {
-            cycle_id: currentCycle.cycle_id,
+      const userIndex = allUserPoints.findIndex(u => u.user_id == userId); // Use == for comparison
+      currentCycleRank = userIndex !== -1 ? userIndex + 1 : 'N/A';
+      
+      detailedCycleMetrics = {
+        cycle_id: currentCycle.cycle_id,
             cycle_name: currentCycle.cycle_name, 
             start_date: currentCycle.start_date,
             end_date: currentCycle.end_date,

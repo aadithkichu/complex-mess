@@ -124,20 +124,26 @@ static async getUserTotalCredit(userId) {
     static async getAllUsersCurrentCyclePoints(cycleId) {
         const sql = `
             SELECT
-    tl.user_id,
-    COALESCE(SUM(tl.points_earned), 0) AS earned,
-    ct.point_objective AS objective -- Fetch the objective from cycle_targets
-FROM
-    task_log tl
-LEFT JOIN
-    cycle_targets ct ON tl.user_id = ct.user_id AND tl.cycle_id = ct.cycle_id
-WHERE
-    tl.cycle_id = ? 
-    AND tl.user_id IS NOT NULL 
-GROUP BY
-    tl.user_id, ct.point_objective -- Group by objective as well
-ORDER BY
-    earned DESC;
+                ct.user_id,
+                COALESCE(SUM(tl.points_earned), 0) AS earned,
+                ct.point_objective AS objective
+            FROM
+                cycle_targets ct
+            LEFT JOIN
+                task_log tl ON ct.user_id = tl.user_id AND ct.cycle_id = tl.cycle_id
+            WHERE
+                ct.cycle_id = ?
+                AND ct.point_objective > 0
+                AND EXISTS (
+                    SELECT 1
+                    FROM cycle_availability ca
+                    WHERE ca.user_id = ct.user_id
+                    AND ca.cycle_id = ct.cycle_id
+                )
+            GROUP BY
+                ct.user_id, ct.point_objective
+            ORDER BY
+                earned DESC;
         `;
         
         try {
