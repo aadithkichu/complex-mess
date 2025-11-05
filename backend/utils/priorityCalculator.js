@@ -50,7 +50,6 @@ function findLastAvailableSlotInCycle(availability, cycleEndDate, now, cycleEndP
         }
         userAvailMap.get(slot.day_of_week).push(slot.time_of_day);
     });
-
     // 3. Iterate backwards, day-by-day, from cycle end date
     let cursorDay = cycleEndDay;
     while (cursorDay >= nowDay) {
@@ -77,24 +76,24 @@ function findLastAvailableSlotInCycle(availability, cycleEndDate, now, cycleEndP
                     continue; 
                 }
                 
-                // c) Check past/present time (Create a precise slot time for comparison)
-                const timePart = TIME_PERIODS[period].start_time;
-                const parts = timePart.split(':'); // e.g., ['17', '00', '01']
-
-                const slotTime = cursorDay.set({ 
-                    hour: parseInt(parts[0]),
-                    minute: parseInt(parts[1]),
-                    second: parseInt(parts[2])
+                const endTimePart = TIME_PERIODS[period].end_time;
+                const endParts = endTimePart.split(':'); 
+                const slotEndTime = cursorDay.set({ 
+                    hour: parseInt(endParts[0]),
+                    minute: parseInt(endParts[1]),
+                    second: parseInt(endParts[2])
                 });
-                
-                // The slot must not have already passed, unless the cycle boundary logic forces it.
-                if (slotTime >= now) {
-                    latestSlot = slotTime;
-                    break; 
+
+                // 2. Check if the period has ALREADY ENDED
+                // If the slot's end time is after 'now', it's a valid slot.
+                if (slotEndTime >= now) {
+                    
+                    // 3. We found the latest valid slot. Return its START time.
+                    latestSlot = slotEndTime;
+                    
+                    break; // Found the latest one, stop looping
                 }
-                // If it's passed 'now', we keep checking earlier periods in the loop
             }
-            
             if (latestSlot) {
                 return latestSlot;
             }
@@ -112,10 +111,8 @@ function findLastAvailableSlotInCycle(availability, cycleEndDate, now, cycleEndP
  */
 function countPeriodsBetween(start, end, availability) { // Replaced TIME_PERIODS with availability
   if (!start || !end || end < start) return 0;
-  
   let count = 0;
   let current = start.set({ second: 0, millisecond: 0 });
-
   // --- FIX: Create availableSlotsSet using the passed 'availability' list ---
   const availableSlotsSet = new Set(availability.map(slot => `${slot.day_of_week}:${slot.time_of_day}`));
   while (current <= end) {
@@ -151,18 +148,14 @@ function countPeriodsBetween(start, end, availability) { // Replaced TIME_PERIOD
 export const calculatePriority = (userData, cycleEndBoundary, cycleEndPeriodStr) => {
     const now = getNowInLocalTime();
     const { availabilityData, points_remaining } = userData;
-    
     let urgencyWeight = 0;
     let periodsRemaining = 0;
     let lastAvailableDayISO = null;
-
     // Call without TIME_PERIODS
     const lastAvailableSlot = findLastAvailableSlotInCycle(availabilityData, cycleEndBoundary, now, cycleEndPeriodStr);
-
     if (lastAvailableSlot) {
         // --- CRITICAL FIX: Pass the 'availabilityData' to the counting function ---
         periodsRemaining = countPeriodsBetween(now, lastAvailableSlot, availabilityData);
-        
         if (points_remaining > 0 && periodsRemaining > 0) {
             urgencyWeight = (points_remaining / periodsRemaining);
         }

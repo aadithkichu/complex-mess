@@ -185,9 +185,6 @@ export class RecommendationModel {
                 const periodOrderB = PERIOD_ORDER[b.period];
                 return periodOrderA - periodOrderB;
             });
-            console.log(`Total Slots Available:`, slotMasterList);
-            console.log(`User Priority List:`, userPriorityList);
-            console.log(`User Availability Map:`, userAvailabilityMap);
             const recommendations = [];
             const assignedSlots = new Set(); // Tracks unique slot keys ("2:2025-11-03:0")
 
@@ -265,7 +262,6 @@ export class RecommendationModel {
                 const periodOrderB = PERIOD_ORDER[b.period];
                 return periodOrderA - periodOrderB; 
             });
-            console.log(`Final Recommendations:`, recommendations);
             return recommendations;
 
         } catch (error) {

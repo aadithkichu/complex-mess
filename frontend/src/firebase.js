@@ -20,9 +20,9 @@ const messaging = getMessaging(app);
 async function subscribeTokenToTopic(token) {
   try {
     // This VITE_API_URL *must* be set in your Vercel environment
-    const API_URL = import.meta.env.VITE_API_URL;
+    const API_URL =  import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL;
     
-    await fetch(`${API_URL}/subscribe-to-topic`, {
+    await fetch(`${API_URL}/api/subscribe-to-topic`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: token }),
