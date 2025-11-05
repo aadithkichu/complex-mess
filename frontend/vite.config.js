@@ -10,9 +10,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      devOptions: {
+        enabled: true
+      },
       registerType: 'autoUpdate',
-      srcDir: 'src',           // ✅ correct placement
-      filename: 'sw.js',       // ✅ this is your unified service worker
+      
+      // REMOVE srcDir and filename from here
+
       includeAssets: ['favicon.svg', 'robots.txt', 'icons/*.png'],
       manifest: {
         name: 'Complex',
@@ -28,7 +32,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        importScripts: ['firebase-messaging-sw.js']
+        // This line tells the auto-generated sw.js
+        // to import your custom firebase script.
+        importScripts: ['firebase-messaging-sw.js'] 
       }
     }),
   ],
