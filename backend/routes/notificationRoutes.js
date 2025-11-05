@@ -1,7 +1,8 @@
 import express from "express";
 import { sendPushNotification } from "../firebaseAdmin.js";
 import { sendBroadcastNotification } from "../firebaseAdmin.js";
-import { generate } from "../models/recommendationModel.js";
+import { RecommendationModel } from '../models/recommendationModel.js';
+import { CycleModel } from '../models/cycleModel.js';
 import admin from "firebase-admin";
 
 const router = express.Router();
@@ -41,10 +42,18 @@ router.post("/send-mess-notification", async (req, res) => {
     }
 
     console.log(`Cron job running for: ${period}`);
+    console.log("Finding active cycle...");
+    const cycle = await CycleModel.getCurrentActive(); // <-- Using your new function
+    
+    if (!cycle) {
+        console.log("No active cycle found. Aborting.");
+        return res.status(200).json({ message: 'No active cycle found.' });
+    }
+    console.log(`Found active cycle: ${cycle.cycle_id}`);
 
     // 3. Get recommendations
     const today = getTodayDateString();
-    const allRecommendations = await generate(); 
+    const allRecommendations =await RecommendationModel.generate(cycle);; 
 
     // 4. Abort if empty
     if (!allRecommendations || allRecommendations.length === 0) {
