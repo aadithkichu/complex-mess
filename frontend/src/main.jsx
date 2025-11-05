@@ -21,19 +21,3 @@ const updateSW = registerSW({
     console.log("✅ App ready to work offline.");
   },
 });
-
-// ✅ Register Firebase messaging SW only if not already present
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    const alreadyRegistered = regs.some(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
-    if (!alreadyRegistered) {
-      navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log('🔥 Firebase SW registered:', registration.scope);
-        })
-        .catch((err) => console.error('Firebase SW registration failed:', err));
-    } else {
-      console.log("⚡ Firebase SW already registered, skipping.");
-    }
-  });
-}

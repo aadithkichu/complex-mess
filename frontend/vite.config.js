@@ -27,6 +27,9 @@ export default defineConfig({
           { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
+      workbox: {
+        importScripts: ['firebase-messaging-sw.js']
+      }
     }),
   ],
   server: {

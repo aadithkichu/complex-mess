@@ -17,14 +17,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// ✅ Exported function to request permission and get FCM token
 export async function requestPermissionAndGetToken() {
   console.log("Requesting notification permission...");
   const permission = await Notification.requestPermission();
 
   if (permission === "granted") {
+    // ✅ Wait for your PWA service worker (sw.js) to be ready
+    const registration = await navigator.serviceWorker.ready;
+
     const token = await getToken(messaging, {
-      vapidKey: "BFPkFUQD2wCyUvYc20QOGDmwi0QwrDebLVp_mIoT6Fb_oiswrqNePSzAfb4jsbFc3jd2pSeMQD-DI80naA-Yw4M", // replace with your VAPID key
+      vapidKey: "BFPkFUQD2wCyUvYc20QOGDmwi0QwrDebLVp_mIoT6Fb_oiswrqNePSzAfb4jsbFc3jd2pSeMQD-DI80naA-Yw4M",
+      // ✅ Tell getToken() to use the active PWA service worker
+      serviceWorkerRegistration: registration,
     });
     console.log("✅ FCM Token:", token);
     return token;
