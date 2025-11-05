@@ -208,18 +208,29 @@ export class RecommendationModel {
                 // 5c. Loop 2: This user's personal search loop
                 // We start this user's search from the beginning of the slot list
                 let currentIndex = 0; 
-                while (pointsToClear > 0 && currentIndex < slotMasterList.length) {
+                let slotsChecked = 0;
+                userFillLoop: // <-- Added a label for the 'lastAvailDate' break
+                while (pointsToClear > 0) {
                     
                     let slotFound = false;
                     
-                    // 5d. Loop 3: Find the next available slot for this user
-                    for (let j = currentIndex; j < slotMasterList.length; j++) {
+                    // --- 2. MODIFIED INNER LOOP ---
+                    // This loop now iterates up to the full list length,
+                    // starting its search from 'currentIndex'
+                    for (let i = 0; i < slotMasterList.length; i++) {
+                        
+                        // --- 3. THE CIRCULAR LOGIC ---
+                        // Use modulo to "wrap around" the list
+                        const j = (currentIndex + i) % slotMasterList.length;
                         const slot = slotMasterList[j];
+
+                        // --- 4. UPDATED BOUNDARY CHECK ---
                         if (lastAvailDate && slot.date > lastAvailDate) {
-                            currentIndex = slotMasterList.length; // Force while loop exit
-                            slotFound = true; // Prevent "user is done" break
-                            break; 
+                            // Stop searching for this user completely
+                            // by breaking the outer 'userFillLoop'
+                            break userFillLoop; 
                         }
+
                         const slotAvailKey = `${slot.dayOfWeek}:${slot.period}`;
 
                         // Check if slot is taken AND if user is available
@@ -236,19 +247,27 @@ export class RecommendationModel {
                             pointsToClear -= slot.templatePoints;
                             // --- END ASSIGNMENT ---
 
-                            // Set the new starting point for this user's *next* search
-                            currentIndex = j + jumpDistance;
+                            // --- 5. UPDATE 'currentIndex' WITH MODULO ---
+                            // Set the new starting point for this user's *next* search,
+                            // using the index 'j' where we found the slot.
+                            currentIndex = (j + jumpDistance) % slotMasterList.length;
                             slotFound = true;
                             
-                            // Break from the inner (j) loop to restart the search
+                            // Reset safety break
+                            slotsChecked = 0; 
+                            
+                            // Break from the inner (i) loop to restart the 'while'
                             break; 
                         }
-                    }
 
-                    // If the inner loop (j) finished without finding a slot,
-                    // this user is done.
-                    if (!slotFound) {
-                        break; // Break from the while loop
+                        // Increment safety break counter
+                        slotsChecked++;
+                    } // --- End of inner (i) loop ---
+
+                    // If the inner loop finished a full rotation without finding a slot,
+                    // OR if the safety break is triggered, this user is done.
+                    if (!slotFound || slotsChecked >= slotMasterList.length) {
+                        break; // Break from the 'while' loop
                     }
                 }
             }
