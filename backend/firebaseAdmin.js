@@ -14,3 +14,17 @@ export const sendPushNotification = async (token, title, body) => {
   });
   console.log("✅ Notification sent to:", token);
 };
+
+export const sendBroadcastNotification = async (title, body) => {
+  const message = {
+    data: { title, body }, // Using 'data' is still best
+    topic: "all_users",
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log("✅ Successfully sent broadcast message:", response);
+  } catch (error) {
+    console.error("Error sending broadcast message:", error);
+  }
+};
