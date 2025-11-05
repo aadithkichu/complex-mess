@@ -427,7 +427,7 @@ export default function UserDetailsModal({ userId, onClose }) {
                         {/* Points Remaining - Mapped to currentStats */}
                         <div className="p-2 bg-white rounded text-center">
                             <span className="text-xs uppercase text-gray-500">Remaining</span>
-                            <p className="text-xl font-bold">{currentStats?.remaining || '0'}</p>
+                            <p className="text-xl font-bold">{(parseFloat(currentStats?.remaining) || 0).toFixed(2)}</p>
                         </div>
                         {/* Periods Remaining - Mapped to priorityCalc */}
                         <div className="p-2 bg-white rounded text-center">
