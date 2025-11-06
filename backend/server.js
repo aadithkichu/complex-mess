@@ -61,7 +61,16 @@ app.use("/api", notificationRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from the Complex-Mess API!' });
 });
-
+app.get('/api/health-check', async (req, res) => {
+  try {
+    // Make a simple, fast query to the database
+    await pool.query('SELECT 1'); 
+    res.status(200).json({ status: 'ok', message: 'Database is awake.' });
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.status(500).json({ status: 'error', message: 'Database ping failed.' });
+  }
+});
 
 app.use('/api/auth', authRoutes); // For logging in/out
 app.use('/api/users', userRoutes); // For managing the member list
