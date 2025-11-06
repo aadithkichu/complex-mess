@@ -53,7 +53,7 @@ export default function WeekPointsTable({ cycleId , refreshTrigger}) {
         // Calculate Ratio (for display)
         let ratio = 0;
         if (objective > 0) {
-          ratio = (taken*taken) / objective;
+          ratio = Math.pow(taken, 4/3) / objective;
         } else if (taken > 0) {
           ratio = Infinity; 
         }

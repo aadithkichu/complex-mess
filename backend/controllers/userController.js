@@ -92,7 +92,15 @@ export const getHistoricalStats = async (req, res) => {
             const usersInCycle = cycleData[cycleId];
             
             // Sort users in this cycle by points descending
-            usersInCycle.sort((a, b) => (b.points_collected*b.points_collected)/b.point_objective - (a.points_collected*a.points_collected)/a.point_objective);
+            usersInCycle.sort((a, b) => {
+              const bRatio = b.point_objective === 0 ? 0 : b.points_collected / b.point_objective;
+              const aRatio = a.point_objective === 0 ? 0 : a.points_collected / a.point_objective;
+
+              const bScore = Math.cbrt(b.points_collected) * bRatio;
+              const aScore = Math.cbrt(a.points_collected) * aRatio;
+              
+              return bScore - aScore;
+            });
             
             const ranks = {};
             usersInCycle.forEach((user, index) => {
@@ -136,7 +144,7 @@ export const getHistoricalStats = async (req, res) => {
                 points_collected: parseFloat(record.points_collected),
                 credits_earned: record.credits_earned,
                 ratio_rank: (record.point_objective > 0) 
-                    ? (parseFloat(record.points_collected)*parseFloat(record.points_collected) / parseFloat(record.point_objective)).toFixed(4)
+                    ? (Math.pow(parseFloat(record.points_collected), 4/3) / parseFloat(record.point_objective)).toFixed(4)
                     : (parseFloat(record.points_collected) > 0 ? 'INF' : 'N/A'),
                 rank: cycleRank,
             });
@@ -211,8 +219,13 @@ export const getUserDetails = async (req, res) => {
       
       // Sort and calculate rank based on the ratio (earned / objective)
       allUserPoints.sort((a, b) => {
-        const ratioA = (a.objective > 0) ? a.earned*a.earned / a.objective : (a.earned > 0 ? Infinity : 0);
-        const ratioB = (b.objective > 0) ? b.earned*b.earned / b.objective : (b.earned > 0 ? Infinity : 0);
+        const ratioA = (a.objective > 0) 
+          ? Math.pow(a.earned, 4/3) / a.objective 
+          : (a.earned > 0 ? Infinity : 0);
+        const ratioB = (b.objective > 0) 
+          ? Math.pow(b.earned, 4/3) / b.objective 
+          : (b.earned > 0 ? Infinity : 0);
+        
         return ratioB - ratioA; // Descending order (higher ratio is better rank)
       });
 
