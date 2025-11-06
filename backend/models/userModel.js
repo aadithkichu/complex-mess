@@ -258,7 +258,7 @@ static async getUserBestPerformance(userId) {
                 COALESCE(cp.total_points_collected, 0) AS points_collected,
                 ct.point_objective,
                 CASE
-                    WHEN ct.point_objective > 0 THEN (COALESCE(cp.total_points_collected, 0) / ct.point_objective)
+                    WHEN ct.point_objective > 0 THEN (COALESCE(cp.total_points_collected, 0)*COALESCE(cp.total_points_collected) / ct.point_objective)
                     WHEN COALESCE(cp.total_points_collected, 0) > 0 THEN 9999999999 -- Represents Infinity
                     ELSE 0
                 END AS ratio
