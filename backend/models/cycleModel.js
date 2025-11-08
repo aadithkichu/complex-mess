@@ -43,12 +43,10 @@ export class CycleModel {
     static _getCycleTemplateFilter(cycle) {
         const periodOrder = ['Morning', 'Noon', 'Evening'];
         
-        // Use Luxon to parse the dates in the correct timezone
         const startDate = DateTime.fromJSDate(cycle.start_date, { zone: TIMEZONE });
         const endDate = DateTime.fromJSDate(cycle.end_date, { zone: TIMEZONE });
 
-        // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        const startDay = startDate.weekday % 7; // Luxon weekday is 7 for Sun
+        const startDay = startDate.weekday % 7;
         const endDay = endDate.weekday % 7;
         
         const startPeriodIndex = periodOrder.indexOf(cycle.start_period);
@@ -57,30 +55,32 @@ export class CycleModel {
         const clauses = [];
         const params = [];
 
-        // Check if the cycle starts and ends on the same calendar date
         if (startDate.hasSame(endDate, 'day')) {
             // --- Same-Date Cycle ---
-            // e.g., Monday 'Morning' to Monday 'Evening'
             const validPeriods = periodOrder.slice(startPeriodIndex, endPeriodIndex + 1);
-            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+            
+            // --- FIX 1 ---
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (??))`); // Was (?)
             params.push(startDay, validPeriods);
         
         } else {
-            // --- Multi-Date Cycle (any length) ---
+            // --- Multi-Date Cycle ---
 
             // 1. Get valid periods for the start day
             const validStartPeriods = periodOrder.slice(startPeriodIndex);
-            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+
+            // --- FIX 2 ---
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (??))`); // Was (?)
             params.push(startDay, validStartPeriods);
 
             // 2. Get valid periods for the end day
             const validEndPeriods = periodOrder.slice(0, endPeriodIndex + 1);
-            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+
+            // --- FIX 3 ---
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (??))`); // Was (?)
             params.push(endDay, validEndPeriods);
 
             // 3. Get all fully valid "in-between" days
-            // This loop iterates from the day *after* the start
-            // to the day *before* the end.
             const inBetweenDays = [];
             let current = startDate.plus({ days: 1 });
             while (current < endDate.startOf('day')) {
@@ -89,14 +89,14 @@ export class CycleModel {
             }
             
             if (inBetweenDays.length > 0) {
-                // Get only unique weekdays (for multi-week cycles)
                 const uniqueInBetweenDays = [...new Set(inBetweenDays)];
-                clauses.push(`ma.day_of_week IN (?)`);
+                
+                // --- FIX 4 (This is the one from your error log) ---
+                clauses.push(`ma.day_of_week IN (??)`); // Was (?)
                 params.push(uniqueInBetweenDays);
             }
         }
 
-        // If there are no clauses (e.g., an invalid cycle), don't filter
         if (clauses.length === 0) {
              return { sql: '', params: [] };
         }
