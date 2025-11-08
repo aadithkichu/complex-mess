@@ -43,11 +43,9 @@ export class CycleModel {
     static _getCycleTemplateFilter(cycle) {
         const periodOrder = ['Morning', 'Noon', 'Evening'];
         
-        // Use Luxon to parse the dates in the correct timezone
         const startDate = DateTime.fromJSDate(cycle.start_date, { zone: TIMEZONE });
         const endDate = DateTime.fromJSDate(cycle.end_date, { zone: TIMEZONE });
 
-        // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
         const startDay = startDate.weekday % 7;
         const endDay = endDate.weekday % 7;
         
@@ -61,32 +59,35 @@ export class CycleModel {
             // --- Same-Date Cycle ---
             const validPeriods = periodOrder.slice(startPeriodIndex, endPeriodIndex + 1);
             
-            // --- FIX: Add guard for empty array ---
             if (validPeriods.length > 0) {
-                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`); // Back to (?)
-                params.push(startDay, validPeriods);
+                // --- FIX ---
+                // Create a string of '?' for each valid period
+                const periodPlaceholders = validPeriods.map(() => '?').join(',');
+                // Manually inject the placeholders
+                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (${periodPlaceholders}))`);
+                // Spread the periods into the params array
+                params.push(startDay, ...validPeriods);
             }
-            // If validPeriods is empty, no clause is added. This is correct.
         
         } else {
             // --- Multi-Date Cycle ---
 
             // 1. Get valid periods for the start day
             const validStartPeriods = periodOrder.slice(startPeriodIndex);
-
-            // --- FIX: Add guard for empty array ---
             if (validStartPeriods.length > 0) {
-                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`); // Back to (?)
-                params.push(startDay, validStartPeriods);
+                // --- FIX ---
+                const periodPlaceholders = validStartPeriods.map(() => '?').join(',');
+                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (${periodPlaceholders}))`);
+                params.push(startDay, ...validStartPeriods);
             }
 
             // 2. Get valid periods for the end day
             const validEndPeriods = periodOrder.slice(0, endPeriodIndex + 1);
-
-            // --- FIX: Add guard for empty array ---
             if (validEndPeriods.length > 0) {
-                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`); // Back to (?)
-                params.push(endDay, validEndPeriods);
+                // --- FIX ---
+                const periodPlaceholders = validEndPeriods.map(() => '?').join(',');
+                clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (${periodPlaceholders}))`);
+                params.push(endDay, ...validEndPeriods);
             }
 
             // 3. Get all fully valid "in-between" days
@@ -99,18 +100,22 @@ export class CycleModel {
             
             if (inBetweenDays.length > 0) {
                 const uniqueInBetweenDays = [...new Set(inBetweenDays)];
-                clauses.push(`ma.day_of_week IN (?)`); // Back to (?)
-                params.push(uniqueInBetweenDays);
+                // --- FIX (This is the one from your error log) ---
+                const dayPlaceholders = uniqueInBetweenDays.map(() => '?').join(',');
+                clauses.push(`ma.day_of_week IN (${dayPlaceholders})`);
+                // Spread the days into the params array
+                params.push(...uniqueInBetweenDays);
             }
         }
 
         if (clauses.length === 0) {
-             // If no valid clauses were generated, return an empty filter.
              return { sql: '', params: [] };
         }
 
         return {
             sql: ` AND (${clauses.join(' OR ')})`,
+            // params is now a flat list, e.g.:
+            // [6, 'Evening', 6, 'Morning', 'Noon', 0, 1, 2, 3, 4, 5]
             params: params
         };
     }
