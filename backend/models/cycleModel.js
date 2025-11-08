@@ -40,20 +40,113 @@ export class CycleModel {
         };
     }
 
+    static _getCycleTemplateFilter(cycle) {
+        const periodOrder = ['Morning', 'Noon', 'Evening'];
+        
+        // Use Luxon to parse the dates in the correct timezone
+        const startDate = DateTime.fromJSDate(cycle.start_date, { zone: TIMEZONE });
+        const endDate = DateTime.fromJSDate(cycle.end_date, { zone: TIMEZONE });
+
+        // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const startDay = startDate.weekday % 7; // Luxon weekday is 7 for Sun
+        const endDay = endDate.weekday % 7;
+        
+        const startPeriodIndex = periodOrder.indexOf(cycle.start_period);
+        const endPeriodIndex = periodOrder.indexOf(cycle.end_period);
+
+        const clauses = [];
+        const params = [];
+
+        // Check if the cycle starts and ends on the same calendar date
+        if (startDate.hasSame(endDate, 'day')) {
+            // --- Same-Date Cycle ---
+            // e.g., Monday 'Morning' to Monday 'Evening'
+            const validPeriods = periodOrder.slice(startPeriodIndex, endPeriodIndex + 1);
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+            params.push(startDay, validPeriods);
+        
+        } else {
+            // --- Multi-Date Cycle (any length) ---
+
+            // 1. Get valid periods for the start day
+            const validStartPeriods = periodOrder.slice(startPeriodIndex);
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+            params.push(startDay, validStartPeriods);
+
+            // 2. Get valid periods for the end day
+            const validEndPeriods = periodOrder.slice(0, endPeriodIndex + 1);
+            clauses.push(`(ma.day_of_week = ? AND ma.time_of_day IN (?))`);
+            params.push(endDay, validEndPeriods);
+
+            // 3. Get all fully valid "in-between" days
+            // This loop iterates from the day *after* the start
+            // to the day *before* the end.
+            const inBetweenDays = [];
+            let current = startDate.plus({ days: 1 });
+            while (current < endDate.startOf('day')) {
+                inBetweenDays.push(current.weekday % 7);
+                current = current.plus({ days: 1 });
+            }
+            
+            if (inBetweenDays.length > 0) {
+                // Get only unique weekdays (for multi-week cycles)
+                const uniqueInBetweenDays = [...new Set(inBetweenDays)];
+                clauses.push(`ma.day_of_week IN (?)`);
+                params.push(uniqueInBetweenDays);
+            }
+        }
+
+        // If there are no clauses (e.g., an invalid cycle), don't filter
+        if (clauses.length === 0) {
+             return { sql: '', params: [] };
+        }
+
+        return {
+            sql: ` AND (${clauses.join(' OR ')})`,
+            params: params
+        };
+    }
+
     static async snapshotAvailability(cycleId, connection) {
         const conn = connection || pool; // Use transaction if provided
         
-        // 1. Delete all old snapshots for this cycle to start fresh
+        // --- 1. Get Cycle Details ---
+        let cycle;
+        try {
+            const [rows] = await conn.execute(
+                'SELECT * FROM cycles WHERE cycle_id = ?', 
+                [cycleId]
+            );
+            if (rows.length === 0) {
+                throw new Error(`Cycle with ID ${cycleId} not found.`);
+            }
+            cycle = rows[0];
+        } catch (error) {
+            console.error("Error fetching cycle for snapshot:", error);
+            throw error;
+        }
+
+        // --- 2. Get the template filter based on cycle boundaries ---
+        const filter = this._getCycleTemplateFilter(cycle);
+
+        // --- 3. Delete old snapshots ---
         await conn.execute(
             'DELETE FROM cycle_availability WHERE cycle_id = ?',
             [cycleId]
         );
+        
+        // If the filter logic resulted in no valid clauses, we stop.
+        if (filter.sql === '' && filter.params.length === 0) {
+             console.warn(`Cycle ${cycleId} has no valid time slots. Snapshot will be empty.`);
+             // We've already deleted, so we're done.
+             return;
+        }
 
-        // 2. Copy the current global availability into the snapshot table
-        const sql = `
+        // --- 4. Copy new, filtered availability ---
+        const baseSql = `
             INSERT INTO cycle_availability (cycle_id, user_id, day_of_week, time_of_day)
             SELECT
-                ? AS cycle_id, -- The target cycle_id
+                ? AS cycle_id,
                 ma.user_id,
                 ma.day_of_week,
                 ma.time_of_day
@@ -62,10 +155,18 @@ export class CycleModel {
             JOIN
                 users u ON ma.user_id = u.user_id
             WHERE
-                u.password_hash = ? -- Only non-admin users
+                u.password_hash = ?
         `;
+
+        // Append the filter SQL and parameters
+        const finalSql = baseSql + filter.sql;
+        const finalParams = [
+            cycleId,
+            MEMBER_NO_LOGIN_PASSWORD_HASH,
+            ...filter.params
+        ];
         
-        await conn.execute(sql, [cycleId, MEMBER_NO_LOGIN_PASSWORD_HASH]);
+        await conn.execute(finalSql, finalParams);
     }
 
     // --- Get current (active) cycle details ---
